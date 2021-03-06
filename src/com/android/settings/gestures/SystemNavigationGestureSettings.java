@@ -59,6 +59,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import lineageos.providers.LineageSettings;
+
 @SearchIndexable
 public class SystemNavigationGestureSettings extends RadioButtonPickerFragment {
 
@@ -70,6 +72,8 @@ public class SystemNavigationGestureSettings extends RadioButtonPickerFragment {
     static final String PREFS_BACK_SENSITIVITY_KEY = "system_navigation_back_sensitivity";
 
     @VisibleForTesting
+    static final String KEY_SYSTEM_HIDDEN_NAV = "system_hidden_nav";
+    @VisibleForTesting
     static final String KEY_SYSTEM_NAV_3BUTTONS = "system_nav_3buttons";
     @VisibleForTesting
     static final String KEY_SYSTEM_NAV_2BUTTONS = "system_nav_2buttons";
@@ -78,6 +82,10 @@ public class SystemNavigationGestureSettings extends RadioButtonPickerFragment {
 
     public static final String PREF_KEY_SUGGESTION_COMPLETE =
             "pref_system_navigation_suggestion_complete";
+
+    @VisibleForTesting
+    static final String NAV_BAR_MODE_HIDDEN_OVERLAY
+            = "org.lineageos.overlay.customization.navbar.hidden";
 
     @VisibleForTesting
     static final String NAV_BAR_MODE_GESTURAL_OVERLAY_NARROW_BACK
@@ -198,6 +206,10 @@ public class SystemNavigationGestureSettings extends RadioButtonPickerFragment {
                     c.getText(R.string.legacy_navigation_summary),
                     KEY_SYSTEM_NAV_3BUTTONS, true /* enabled */));
         }
+        candidates.add(new CandidateInfoExtra(
+            c.getText(R.string.hidden_navigation_title),
+            c.getText(R.string.hidden_navigation_summary),
+            KEY_SYSTEM_HIDDEN_NAV, true /* enabled */));
 
         return candidates;
     }
@@ -258,6 +270,8 @@ public class SystemNavigationGestureSettings extends RadioButtonPickerFragment {
             return KEY_SYSTEM_NAV_GESTURAL;
         } else if (SystemNavigationPreferenceController.isSwipeUpEnabled(context)) {
             return KEY_SYSTEM_NAV_2BUTTONS;
+        } else if(SystemNavigationPreferenceController.isNavbarHidden(context)) {
+            return KEY_SYSTEM_HIDDEN_NAV;
         } else {
             return KEY_SYSTEM_NAV_3BUTTONS;
         }
@@ -270,14 +284,43 @@ public class SystemNavigationGestureSettings extends RadioButtonPickerFragment {
             case KEY_SYSTEM_NAV_GESTURAL:
                 int sensitivity = getBackSensitivity(context, overlayManager);
                 setNavBarInteractionMode(overlayManager, BACK_GESTURE_INSET_OVERLAYS[sensitivity]);
+                
+                updatehidden(context);
+
                 break;
             case KEY_SYSTEM_NAV_2BUTTONS:
                 setNavBarInteractionMode(overlayManager, NAV_BAR_MODE_2BUTTON_OVERLAY);
+                
+                updatehidden(context);
+
                 break;
             case KEY_SYSTEM_NAV_3BUTTONS:
                 setNavBarInteractionMode(overlayManager, NAV_BAR_MODE_3BUTTON_OVERLAY);
+
+                updatehidden(context);
+
+                break;
+            case KEY_SYSTEM_HIDDEN_NAV:
+                setNavBarInteractionMode(overlayManager, NAV_BAR_MODE_HIDDEN_OVERLAY);
+                
+                try {
+                    overlayManager.setHighestPriority(NAV_BAR_MODE_HIDDEN_OVERLAY, USER_CURRENT);
+                } catch (RemoteException e) {
+                    throw e.rethrowFromSystemServer();
+                }
+                
+                /* try {
+                    overlayManager.setEnabled(NAV_BAR_MODE_HIDDEN_OVERLAY, true, USER_CURRENT);
+                } catch (RemoteException e) {
+                    throw e.rethrowFromSystemServer();
+                } */
+                LineageSettings.System.putInt(context.getContentResolver(), LineageSettings.System.HIDDEN_NAVIGATION_BAR, 1);
                 break;
         }
+    }
+
+    private static void updatehidden(Context context) {
+        LineageSettings.System.putInt(context.getContentResolver(), LineageSettings.System.HIDDEN_NAVIGATION_BAR, 0);
     }
 
     private static void setNavBarInteractionMode(IOverlayManager overlayManager,

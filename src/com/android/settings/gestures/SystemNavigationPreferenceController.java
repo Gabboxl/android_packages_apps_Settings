@@ -31,6 +31,8 @@ import android.view.WindowManagerGlobal;
 import com.android.settings.R;
 import com.android.settings.core.BasePreferenceController;
 
+import lineageos.providers.LineageSettings;
+
 public class SystemNavigationPreferenceController extends BasePreferenceController {
 
     static final String PREF_KEY_SYSTEM_NAVIGATION = "gesture_system_navigation";
@@ -111,5 +113,9 @@ public class SystemNavigationPreferenceController extends BasePreferenceControll
     static boolean isEdgeToEdgeEnabled(Context context) {
         return NAV_BAR_MODE_GESTURAL == context.getResources().getInteger(
                 com.android.internal.R.integer.config_navBarInteractionMode);
+    }
+
+    static boolean isNavbarHidden(Context context) {
+        return LineageSettings.System.getInt(context.getContentResolver(), LineageSettings.System.HIDDEN_NAVIGATION_BAR, 0) == 1;
     }
 }
